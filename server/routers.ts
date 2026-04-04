@@ -9,15 +9,218 @@ import * as congressApi from "./congress-api";
 import { sendPushToUser } from "./_core/push";
 import bcrypt from "bcryptjs";
 
+
 export const appRouter = router({
   system: systemRouter,
-  auth: router({
+  auth: auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+
+    // ─── Email / Password Auth ─────────────────────────────────────────────
+    registerEmail: publicProcedure
+      .input(z.object({
+        name: z.string().min(2).max(100),
+        email: z.string().email().max(320),
+        password: z.string().min(6).max(128),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { sdk } = await import("./_core/sdk");
+        const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+        // Check if e-mail already exists
+        const existing = await db.getUserByEmail(input.email);
+        if (existing) throw new Error("Este e-mail já está cadastrado. Faça login.");
+        // Create stable openId for email users
+        const openId = `email:${input.email.toLowerCase().trim()}`;
+        const passwordHash = await bcrypt.hash(input.password, 10);
+        await db.upsertUser({
+          openId,
+          name: input.name,
+          email: input.email.toLowerCase().trim(),
+          loginMethod: "email",
+          lastSignedIn: new Date(),
+        });
+        const user = await db.getUserByOpenId(openId);
+        if (user) await db.setUserPasswordHash(user.id, passwordHash);
+        const sessionToken = await sdk.createSessionToken(openId, {
+          name: input.name,
+          expiresInMs: ONE_YEAR_MS,
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        return {
+          success: true,
+          sessionToken,
+          user: {
+            id: user?.id ?? null,
+            openId,
+            name: input.name,
+            email: input.email.toLowerCase().trim(),
+            loginMethod: "email" as const,
+          },
+        };
+      }),
+
+    loginEmail: publicProcedure
+      .input(z.object({
+        email: z.string().email().max(320),
+        password: z.string().min(1).max(128),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const { sdk } = await import("./_core/sdk");
+        const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+        const user = await db.getUserByEmail(input.email);
+        if (!user) throw new Error("E-mail não encontrado. Verifique ou crie uma conta.");
+        if (!user.passwordHash) throw new Error("Esta conta usa outro método de login (Gov.br). Tente outra opção.");
+        const valid = await bcrypt.compare(input.password, user.passwordHash);
+        if (!valid) throw new Error("Senha incorreta. Tente novamente.");
+        await db.upsertUser({
+          openId: user.openId,
+          name: user.name ?? "",
+          email: user.email ?? null,
+          loginMethod: "email",
+          lastSignedIn: new Date(),
+        });
+        const sessionToken = await sdk.createSessionToken(user.openId, {
+          name: user.name || "",
+          expiresInMs: ONE_YEAR_MS,
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+        return {
+          success: true,
+          sessionToken,
+          user: {
+            id: user.id,
+            openId: user.openId,
+            name: user.name,
+            email: user.email,
+            loginMethod: "email" as const,
+          },
+        };
+      }),
+
+    // ─── Esqueci minha senha / Recuperação ─────────────────────────────────
+    forgotPassword: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const { email } = input;
+
+        // Verificar se o e-mail existe
+        const user = await db.getUserByEmail(email);
+        if (!user) {
+          return { success: true, message: "Se o e-mail existir, você receberá um link." };
+        }
+
+        // Gerar token único
+        const token = crypto.randomBytes(32).toString("hex");
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+        // Deletar tokens antigos para este e-mail
+        await db.db.delete(passwordResets).where(eq(passwordResets.email, email));
+
+        // Inserir novo token
+        await db.db.insert(passwordResets).values({
+          email,
+          token,
+          expiresAt,
+        });
+
+        // Configurar Resend (precisa da chave API)
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const resetLink = `https://lobby-popular-full.onrender.com/reset-password?token=${token}&email=${encodeURIComponent(email)}`;
+
+        await resend.emails.send({
+          from: "noreply@populus.com",
+          to: email,
+          subject: "Redefinição de senha - Populus",
+          html: `<p>Você solicitou a redefinição de senha.</p>
+                 <p>Clique no link abaixo para criar uma nova senha (válido por 1 hora):</p>
+                 <a href="${resetLink}">${resetLink}</a>
+                 <p>Se não foi você, ignore este e-mail.</p>`,
+        });
+
+        return { success: true };
+      }),
+
+    resetPassword: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        token: z.string(),
+        newPassword: z.string().min(6),
+      }))
+      .mutation(async ({ input }) => {
+        const { email, token, newPassword } = input;
+
+        // Buscar token válido
+        const resetRecord = await db.db.select()
+          .from(passwordResets)
+          .where(eq(passwordResets.token, token))
+          .limit(1);
+
+        const record = resetRecord[0];
+        if (!record || record.email !== email) {
+          throw new Error("Link inválido.");
+        }
+
+        if (record.expiresAt < new Date()) {
+          throw new Error("Link expirado. Solicite uma nova redefinição.");
+        }
+
+        // Atualizar a senha do usuário
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await db.db.update(users)
+          .set({ passwordHash: hashedPassword })
+          .where(eq(users.email, email));
+
+        // Remover token usado
+        await db.db.delete(passwordResets).where(eq(passwordResets.id, record.id));
+
+        return { success: true };
+      }),
+
+    // ─── Gov.br Auth ───────────────────────────────────────────────────────
+    loginGovBr: publicProcedure
+      .input(z.object({
+        cpf: z.string().min(11).max(14),
+        name: z.string().min(2).max(100),
+        email: z.string().email().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const cpfDigits = input.cpf.replace(/\D/g, "");
+        if (cpfDigits.length !== 11) throw new Error("CPF inválido. Digite os 11 dígitos.");
+        const openId = `govbr:${cpfDigits}`;
+        const { sdk } = await import("./_core/sdk");
+        await db.upsertUser({
+          openId,
+          name: input.name,
+          email: input.email ?? null,
+          loginMethod: "govbr",
+          lastSignedIn: new Date(),
+        });
+        const sessionToken = await sdk.createSessionToken(openId, {
+          name: input.name,
+          expiresInMs: 365 * 24 * 60 * 60 * 1000,
+        });
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: 365 * 24 * 60 * 60 * 1000 });
+        const user = await db.getUserByOpenId(openId);
+        return {
+          success: true,
+          sessionToken,
+          user: {
+            id: user?.id ?? null,
+            openId,
+            name: input.name,
+            email: input.email ?? null,
+            loginMethod: "govbr" as const,
+          },
+        };
+      }),
+  }),
     // ─── Email / Password Auth ─────────────────────────────────────────────
     // Cadastro com e-mail e senha
     registerEmail: publicProcedure

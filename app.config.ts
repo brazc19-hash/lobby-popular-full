@@ -44,7 +44,7 @@ const config: ExpoConfig = {
   owner: "populus1918",
   extra: {
     eas: {
-      projectId: "",
+      projectId: "986f3175-36d1-4fe0-bf13-7d8bdc388a4b",
     },
   },
   version: "1.0.0",

@@ -1,277 +1,259 @@
-import {
-  boolean,
+﻿import { 
+  pgTable, 
+  serial, 
+  varchar, 
+  text, 
+  integer, 
+  timestamp, 
+  boolean, 
+  jsonb,
   decimal,
-  int,
-  mysqlEnum,
-  mysqlTable,
-  text,
-  timestamp,
-  varchar,
-} from "drizzle-orm/mysql-core";
-
-// ─── Users ────────────────────────────────────────────────────────────────────
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
-  name: text("name"),
+  uniqueIndex, 
+  index 
+} from "drizzle-orm/pg-core";
+// â”€â”€â”€ Users â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  openId: varchar("open_id", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 320 }),
-  role: mysqlEnum("role", ["user", "moderator", "admin"]).default("user").notNull(),
-  loginMethod: varchar("loginMethod", { length: 32 }).default("oauth").notNull(),
-  passwordHash: text("passwordHash"),  // only set for email/password auth
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }),
+  loginMethod: varchar("login_method", { length: 20 }).notNull(),
+  role: varchar("role", { length: 20 }).default("user").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
-
-// ─── Constitution Articles ─────────────────────────────────────────────────────
-export const constitutionArticles = mysqlTable("constitution_articles", {
-  id: int("id").autoincrement().primaryKey(),
+// â”€â”€â”€ Constitution Articles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const constitutionArticles = pgTable("constitution_articles", {
+  id: serial("id").primaryKey(),
   articleNumber: varchar("articleNumber", { length: 20 }).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   summary: text("summary").notNull(),
   fullText: text("fullText").notNull(),
   theme: varchar("theme", { length: 100 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Lobbies ──────────────────────────────────────────────────────────────────
-export const lobbies = mysqlTable("lobbies", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+// â”€â”€â”€ Lobbies â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const lobbies = pgTable("lobbies", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
   objective: text("objective").notNull(),
-  category: mysqlEnum("category", ["national", "local"]).notNull(),
-  status: mysqlEnum("status", ["pending", "active", "rejected", "closed"]).default("active").notNull(),
-  constitutionArticleId: int("constitutionArticleId").notNull(),
+  category: varchar("category", { length: 20 }).notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(),
+  constitutionArticleId: integer("constitutionArticleId").notNull(),
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
   longitude: decimal("longitude", { precision: 10, scale: 7 }),
   locationAddress: text("locationAddress"),
   locationCity: varchar("locationCity", { length: 100 }),
   locationState: varchar("locationState", { length: 2 }),
-  petitionCategory: mysqlEnum("petitionCategory", [
-    "infrastructure",
-    "education",
-    "health",
-    "security",
-    "environment",
-    "human_rights",
-    "economy",
-    "transparency",
-    "culture"
-  ]),
-  goalCount: int("goalCount").default(1000).notNull(),
-  lobbyStatus: mysqlEnum("lobbyStatus", ["mobilization", "pressure", "processing", "concluded"]).default("mobilization").notNull(),
+  petitionCategory: varchar("petitionCategory", { length: 20 }),
+  goalCount: integer("goalCount").default(1000).notNull(),
+  lobbyStatus: varchar("lobbyStatus", { length: 20 }).default("mobilization").notNull(),
   evidenceUrls: text("evidenceUrls"),  // JSON array of URLs
   targetParlamentarians: text("targetParlamentarians"),  // JSON array
-  supportCount: int("supportCount").default(0).notNull(),
-  viewCount: int("viewCount").default(0).notNull(),
+  supportCount: integer("supportCount").default(0).notNull(),
+  viewCount: integer("viewCount").default(0).notNull(),
   isPriorityAgenda: boolean("isPriorityAgenda").default(false).notNull(),
-  priorityAgendaUntil: timestamp("priorityAgendaUntil"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  priorityAgendaUntil: timestamp("priorityAgendaUntil", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Lobby Supports ───────────────────────────────────────────────────────────
-export const lobbySupports = mysqlTable("lobby_supports", {
-  id: int("id").autoincrement().primaryKey(),
-  lobbyId: int("lobbyId").notNull(),
-  userId: int("userId").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+// â”€â”€â”€ Lobby Supports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const lobbySupports = pgTable("lobby_supports", {
+  id: serial("id").primaryKey(),
+  lobbyId: integer("lobbyId").notNull(),
+  userId: integer("userId").notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Communities ──────────────────────────────────────────────────────────────
-export const communities = mysqlTable("communities", {
-  id: int("id").autoincrement().primaryKey(),
-  creatorId: int("creatorId").notNull(),
+// â”€â”€â”€ Communities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const communities = pgTable("communities", {
+  id: serial("id").primaryKey(),
+  creatorId: integer("creatorId").notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description").notNull(),
   theme: varchar("theme", { length: 100 }).notNull(),
-  memberCount: int("memberCount").default(1).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  memberCount: integer("memberCount").default(1).notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Community Members ────────────────────────────────────────────────────────
-export const communityMembers = mysqlTable("community_members", {
-  id: int("id").autoincrement().primaryKey(),
-  communityId: int("communityId").notNull(),
-  userId: int("userId").notNull(),
-  role: mysqlEnum("role", ["member", "moderator", "admin"]).default("member").notNull(),
-  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+// â”€â”€â”€ Community Members â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const communityMembers = pgTable("community_members", {
+  id: serial("id").primaryKey(),
+  communityId: integer("communityId").notNull(),
+  userId: integer("userId").notNull(),
+  role: varchar("role", { length: 20 }).default("member").notNull(),
+  joinedAt: timestamp("joinedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Community Lobby Alliances ────────────────────────────────────────────────
-export const communityLobbyAlliances = mysqlTable("community_lobby_alliances", {
-  id: int("id").autoincrement().primaryKey(),
-  communityId: int("communityId").notNull(),
-  lobbyId: int("lobbyId").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+// â”€â”€â”€ Community Lobby Alliances â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const communityLobbyAlliances = pgTable("community_lobby_alliances", {
+  id: serial("id").primaryKey(),
+  communityId: integer("communityId").notNull(),
+  lobbyId: integer("lobbyId").notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Forum Posts ──────────────────────────────────────────────────────────────
-export const forumPosts = mysqlTable("forum_posts", {
-  id: int("id").autoincrement().primaryKey(),
-  communityId: int("communityId").notNull(),
-  userId: int("userId").notNull(),
+// â”€â”€â”€ Forum Posts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const forumPosts = pgTable("forum_posts", {
+  id: serial("id").primaryKey(),
+  communityId: integer("communityId").notNull(),
+  userId: integer("userId").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   content: text("content").notNull(),
-  commentCount: int("commentCount").default(0).notNull(),
+  commentCount: integer("commentCount").default(0).notNull(),
   isPinned: boolean("isPinned").default(false).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Forum Comments ───────────────────────────────────────────────────────────
-export const forumComments = mysqlTable("forum_comments", {
-  id: int("id").autoincrement().primaryKey(),
-  postId: int("postId").notNull(),
-  userId: int("userId").notNull(),
+// â”€â”€â”€ Forum Comments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const forumComments = pgTable("forum_comments", {
+  id: serial("id").primaryKey(),
+  postId: integer("postId").notNull(),
+  userId: integer("userId").notNull(),
   content: text("content").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── News Items ───────────────────────────────────────────────────────────────
-export const newsItems = mysqlTable("news_items", {
-  id: int("id").autoincrement().primaryKey(),
+// â”€â”€â”€ News Items â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const newsItems = pgTable("news_items", {
+  id: serial("id").primaryKey(),
   title: varchar("title", { length: 500 }).notNull(),
   summary: text("summary").notNull(),
   source: varchar("source", { length: 100 }).notNull(),
   url: text("url"),
   imageUrl: text("imageUrl"),
   category: varchar("category", { length: 100 }),
-  publishedAt: timestamp("publishedAt").defaultNow().notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  publishedAt: timestamp("publishedAt", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Community Channels ─────────────────────────────────────────────────────
-export const communityChannels = mysqlTable("community_channels", {
-  id: int("id").autoincrement().primaryKey(),
-  communityId: int("communityId").notNull(),
+// â”€â”€â”€ Community Channels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const communityChannels = pgTable("community_channels", {
+  id: serial("id").primaryKey(),
+  communityId: integer("communityId").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   slug: varchar("slug", { length: 100 }).notNull(),
   description: text("description"),
   isDefault: boolean("isDefault").default(false).notNull(),
-  messageCount: int("messageCount").default(0).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  messageCount: integer("messageCount").default(0).notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Channel Messages ─────────────────────────────────────────────────────────
-export const channelMessages = mysqlTable("channel_messages", {
-  id: int("id").autoincrement().primaryKey(),
-  channelId: int("channelId").notNull(),
-  userId: int("userId").notNull(),
+// â”€â”€â”€ Channel Messages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const channelMessages = pgTable("channel_messages", {
+  id: serial("id").primaryKey(),
+  channelId: integer("channelId").notNull(),
+  userId: integer("userId").notNull(),
   content: text("content").notNull(),
   mentions: text("mentions"),  // JSON array of user IDs mentioned
-  replyToId: int("replyToId"),
+  replyToId: integer("replyToId"),
   isEdited: boolean("isEdited").default(false).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Direct Messages ──────────────────────────────────────────────────────────
-export const directMessages = mysqlTable("direct_messages", {
-  id: int("id").autoincrement().primaryKey(),
-  senderId: int("senderId").notNull(),
-  receiverId: int("receiverId").notNull(),
+// â”€â”€â”€ Direct Messages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const directMessages = pgTable("direct_messages", {
+  id: serial("id").primaryKey(),
+  senderId: integer("senderId").notNull(),
+  receiverId: integer("receiverId").notNull(),
   content: text("content").notNull(),
-  readAt: timestamp("readAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  readAt: timestamp("readAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Lobby Milestones ─────────────────────────────────────────────────────────
-export const lobbyMilestones = mysqlTable("lobby_milestones", {
-  id: int("id").autoincrement().primaryKey(),
-  lobbyId: int("lobbyId").notNull(),
-  targetCount: int("targetCount").notNull(),
+// â”€â”€â”€ Lobby Milestones â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const lobbyMilestones = pgTable("lobby_milestones", {
+  id: serial("id").primaryKey(),
+  lobbyId: integer("lobbyId").notNull(),
+  targetCount: integer("targetCount").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  reward: varchar("reward", { length: 255 }),  // ex: "Audiência com vereador"
-  reachedAt: timestamp("reachedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  reward: varchar("reward", { length: 255 }),  // ex: "AudiÃªncia com vereador"
+  reachedAt: timestamp("reachedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Lobby Timeline ───────────────────────────────────────────────────────────
-export const lobbyTimeline = mysqlTable("lobby_timeline", {
-  id: int("id").autoincrement().primaryKey(),
-  lobbyId: int("lobbyId").notNull(),
-  type: mysqlEnum("type", ["created", "milestone", "update", "media", "response", "concluded"]).notNull(),
+// â”€â”€â”€ Lobby Timeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const lobbyTimeline = pgTable("lobby_timeline", {
+  id: serial("id").primaryKey(),
+  lobbyId: integer("lobbyId").notNull(),
+  type: varchar("type", { length: 20 }).notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   mediaUrl: text("mediaUrl"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── User Profiles ──────────────────────────────────────────────────────────
-export const userProfiles = mysqlTable("user_profiles", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().unique(),
+// â”€â”€â”€ User Profiles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const userProfiles = pgTable("user_profiles", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull().unique(),
   bio: text("bio"),
   avatarUrl: text("avatarUrl"),
   city: varchar("city", { length: 100 }),
   state: varchar("state", { length: 2 }),
   interests: text("interests"),  // JSON array of PetitionCategory values
-  followersCount: int("followersCount").default(0).notNull(),
-  followingCount: int("followingCount").default(0).notNull(),
-  lobbiesCreated: int("lobbiesCreated").default(0).notNull(),
-  lobbiesSupported: int("lobbiesSupported").default(0).notNull(),
-  communitiesJoined: int("communitiesJoined").default(0).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  followersCount: integer("followersCount").default(0).notNull(),
+  followingCount: integer("followingCount").default(0).notNull(),
+  lobbiesCreated: integer("lobbiesCreated").default(0).notNull(),
+  lobbiesSupported: integer("lobbiesSupported").default(0).notNull(),
+  communitiesJoined: integer("communitiesJoined").default(0).notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── User Follows ─────────────────────────────────────────────────────────────
-export const userFollows = mysqlTable("user_follows", {
-  id: int("id").autoincrement().primaryKey(),
-  followerId: int("followerId").notNull(),
-  followingId: int("followingId").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+// â”€â”€â”€ User Follows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const userFollows = pgTable("user_follows", {
+  id: serial("id").primaryKey(),
+  followerId: integer("followerId").notNull(),
+  followingId: integer("followingId").notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Activity Feed ────────────────────────────────────────────────────────────
-export const activityFeed = mysqlTable("activity_feed", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  type: mysqlEnum("type", [
-    "lobby_created",
-    "lobby_supported",
-    "community_joined",
-    "community_created",
-    "post_created",
-    "comment_created",
-    "follow",
-  ]).notNull(),
-  targetId: int("targetId"),
+// â”€â”€â”€ Activity Feed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const activityFeed = pgTable("activity_feed", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  type: varchar("type", { length: 20 }).notNull(),
+  targetId: integer("targetId"),
   targetTitle: varchar("targetTitle", { length: 255 }),
   targetCategory: varchar("targetCategory", { length: 50 }),
   metadata: text("metadata"),  // JSON for extra data
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── User Interactions ───────────────────────────────────────────────────────
-export const userInteractions = mysqlTable("user_interactions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  lobbyId: int("lobbyId"),
-  communityId: int("communityId"),
-  action: mysqlEnum("action", ["view", "support", "comment", "share", "join"]).notNull(),
+// â”€â”€â”€ User Interactions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const userInteractions = pgTable("user_interactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  lobbyId: integer("lobbyId"),
+  communityId: integer("communityId"),
+  action: varchar("action", { length: 20 }).notNull(),
   petitionCategory: varchar("petitionCategory", { length: 50 }),
   locationState: varchar("locationState", { length: 2 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── User Preferences ────────────────────────────────────────────────────────
-export const userPreferences = mysqlTable("user_preferences", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().unique(),
+// â”€â”€â”€ User Preferences â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const userPreferences = pgTable("user_preferences", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull().unique(),
   topCategories: text("topCategories"),  // JSON array of top categories
   topStates: text("topStates"),          // JSON array of top states
-  preferredLobbyType: mysqlEnum("preferredLobbyType", ["national", "local", "both"]).default("both").notNull(),
-  lastUpdated: timestamp("lastUpdated").defaultNow().onUpdateNow().notNull(),
+  preferredLobbyType: varchar("preferredLobbyType", { length: 20 }).default("both").notNull(),
+  lastUpdated: timestamp("lastUpdated", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type ConstitutionArticle = typeof constitutionArticles.$inferSelect;
@@ -300,13 +282,13 @@ export type InsertActivityFeedItem = typeof activityFeed.$inferInsert;
 
 export const PETITION_CATEGORIES = [
   { value: "infrastructure", label: "Infraestrutura Urbana", icon: "building.columns.fill" },
-  { value: "education", label: "Educação", icon: "doc.text.fill" },
-  { value: "health", label: "Saúde", icon: "heart.fill" },
-  { value: "security", label: "Segurança Pública", icon: "shield.fill" },
+  { value: "education", label: "EducaÃ§Ã£o", icon: "doc.text.fill" },
+  { value: "health", label: "SaÃºde", icon: "heart.fill" },
+  { value: "security", label: "SeguranÃ§a PÃºblica", icon: "shield.fill" },
   { value: "environment", label: "Meio Ambiente", icon: "globe" },
   { value: "human_rights", label: "Direitos Humanos", icon: "person.3.fill" },
   { value: "economy", label: "Economia e Tributos", icon: "chart.bar.fill" },
-  { value: "transparency", label: "Transparência e Anticorrupção", icon: "eye.fill" },
+  { value: "transparency", label: "TransparÃªncia e AnticorrupÃ§Ã£o", icon: "eye.fill" },
   { value: "culture", label: "Cultura e Esporte", icon: "star.fill" },
 ] as const;
 
@@ -323,25 +305,25 @@ export type InsertLobbyMilestone = typeof lobbyMilestones.$inferInsert;
 export type LobbyTimelineItem = typeof lobbyTimeline.$inferSelect;
 export type InsertLobbyTimelineItem = typeof lobbyTimeline.$inferInsert;
 
-// ─── Pressure Actions ────────────────────────────────────────────────────────
-export const pressureActions = mysqlTable("pressure_actions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  lobbyId: int("lobbyId").notNull(),
-  channel: mysqlEnum("channel", ["whatsapp", "email", "twitter", "instagram", "phone", "copy"]).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+// â”€â”€â”€ Pressure Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const pressureActions = pgTable("pressure_actions", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  lobbyId: integer("lobbyId").notNull(),
+  channel: varchar("channel", { length: 20 }).notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Smart Milestones ────────────────────────────────────────────────────────
-export const smartMilestones = mysqlTable("smart_milestones", {
-  id: int("id").autoincrement().primaryKey(),
-  lobbyId: int("lobbyId").notNull(),
-  targetCount: int("targetCount").notNull(),
+// â”€â”€â”€ Smart Milestones â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const smartMilestones = pgTable("smart_milestones", {
+  id: serial("id").primaryKey(),
+  lobbyId: integer("lobbyId").notNull(),
+  targetCount: integer("targetCount").notNull(),
   action: varchar("action", { length: 500 }).notNull(),
   description: text("description"),
   achieved: boolean("achieved").default(false).notNull(),
-  achievedAt: timestamp("achievedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  achievedAt: timestamp("achievedAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type PressureAction = typeof pressureActions.$inferSelect;
@@ -349,61 +331,61 @@ export type InsertPressureAction = typeof pressureActions.$inferInsert;
 export type SmartMilestone = typeof smartMilestones.$inferSelect;
 export type InsertSmartMilestone = typeof smartMilestones.$inferInsert;
 
-// ─── Lobby Plebiscites ────────────────────────────────────────────────────────
-export const lobbyPlebiscites = mysqlTable("lobby_plebiscites", {
-  id: int("id").autoincrement().primaryKey(),
-  lobbyId: int("lobbyId").notNull(),
+// â”€â”€â”€ Lobby Plebiscites â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const lobbyPlebiscites = pgTable("lobby_plebiscites", {
+  id: serial("id").primaryKey(),
+  lobbyId: integer("lobbyId").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
-  status: mysqlEnum("status", ["active", "approved", "rejected", "expired"]).default("active").notNull(),
-  yesVotes: int("yesVotes").default(0).notNull(),
-  noVotes: int("noVotes").default(0).notNull(),
-  activatedAt: timestamp("activatedAt").defaultNow().notNull(),
-  endsAt: timestamp("endsAt").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(),
+  yesVotes: integer("yesVotes").default(0).notNull(),
+  noVotes: integer("noVotes").default(0).notNull(),
+  activatedAt: timestamp("activatedAt", { withTimezone: true }).defaultNow().notNull(),
+  endsAt: timestamp("endsAt", { withTimezone: true }).notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Plebiscite Votes ─────────────────────────────────────────────────────────
-export const plebisciteVotes = mysqlTable("plebiscite_votes", {
-  id: int("id").autoincrement().primaryKey(),
-  plebisciteId: int("plebisciteId").notNull(),
-  userId: int("userId").notNull(),
-  vote: mysqlEnum("vote", ["yes", "no"]).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+// â”€â”€â”€ Plebiscite Votes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const plebisciteVotes = pgTable("plebiscite_votes", {
+  id: serial("id").primaryKey(),
+  plebisciteId: integer("plebisciteId").notNull(),
+  userId: integer("userId").notNull(),
+  vote: varchar("vote", { length: 20 }).notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── National Plebiscites ─────────────────────────────────────────────────────
-export const nationalPlebiscites = mysqlTable("national_plebiscites", {
-  id: int("id").autoincrement().primaryKey(),
+// â”€â”€â”€ National Plebiscites â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const nationalPlebiscites = pgTable("national_plebiscites", {
+  id: serial("id").primaryKey(),
   title: varchar("title", { length: 500 }).notNull(),
   description: text("description").notNull(),
   category: varchar("category", { length: 100 }).notNull(),
-  status: mysqlEnum("status", ["active", "closed", "sent_to_chamber"]).default("active").notNull(),
-  yesVotes: int("yesVotes").default(0).notNull(),
-  noVotes: int("noVotes").default(0).notNull(),
-  endsAt: timestamp("endsAt").notNull(),
-  sentToChamberAt: timestamp("sentToChamberAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(),
+  yesVotes: integer("yesVotes").default(0).notNull(),
+  noVotes: integer("noVotes").default(0).notNull(),
+  endsAt: timestamp("endsAt", { withTimezone: true }).notNull(),
+  sentToChamberAt: timestamp("sentToChamberAt", { withTimezone: true }),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── National Plebiscite Votes ────────────────────────────────────────────────
-export const nationalPlebisciteVotes = mysqlTable("national_plebiscite_votes", {
-  id: int("id").autoincrement().primaryKey(),
-  plebisciteId: int("plebisciteId").notNull(),
-  userId: int("userId").notNull(),
-  vote: mysqlEnum("vote", ["yes", "no"]).notNull(),
+// â”€â”€â”€ National Plebiscite Votes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const nationalPlebisciteVotes = pgTable("national_plebiscite_votes", {
+  id: serial("id").primaryKey(),
+  plebisciteId: integer("plebisciteId").notNull(),
+  userId: integer("userId").notNull(),
+  vote: varchar("vote", { length: 20 }).notNull(),
   state: varchar("state", { length: 2 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Power Metrics ────────────────────────────────────────────────────────────
-export const powerMetrics = mysqlTable("power_metrics", {
-  id: int("id").autoincrement().primaryKey(),
-  totalCitizens: int("totalCitizens").default(0).notNull(),
+// â”€â”€â”€ Power Metrics â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const powerMetrics = pgTable("power_metrics", {
+  id: serial("id").primaryKey(),
+  totalCitizens: integer("totalCitizens").default(0).notNull(),
   electoratePercent: decimal("electoratePercent", { precision: 5, scale: 2 }).default("0").notNull(),
-  billsInfluenced: int("billsInfluenced").default(0).notNull(),
-  victories: int("victories").default(0).notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  billsInfluenced: integer("billsInfluenced").default(0).notNull(),
+  victories: integer("victories").default(0).notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type LobbyPlebiscite = typeof lobbyPlebiscites.$inferSelect;
@@ -417,38 +399,23 @@ export type InsertNationalPlebisciteVote = typeof nationalPlebisciteVotes.$infer
 export type PowerMetric = typeof powerMetrics.$inferSelect;
 export type InsertPowerMetric = typeof powerMetrics.$inferInsert;
 
-// ─── User Points (Gamification) ─────────────────────────────────────────────
-export const userPoints = mysqlTable("user_points", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  action: mysqlEnum("action", [
-    "lobby_support",
-    "lobby_create",
-    "pressure_action",
-    "share_card",
-    "invite_friend",
-    "lobby_approved",
-  ]).notNull(),
-  points: int("points").notNull(),
-  referenceId: int("referenceId"),  // lobbyId, communityId, etc.
+// â”€â”€â”€ User Points (Gamification) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const userPoints = pgTable("user_points", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  action: varchar("action", { length: 20 }).notNull(),
+  points: integer("points").notNull(),
+  referenceId: integer("referenceId"),  // lobbyId, communityId, etc.
   description: varchar("description", { length: 255 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── User Achievements (Gamification) ───────────────────────────────────────
-export const userAchievements = mysqlTable("user_achievements", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  achievementKey: mysqlEnum("achievementKey", [
-    "pressure_1000",
-    "community_1000_members",
-    "lobby_became_bill",
-    "first_lobby",
-    "first_support",
-    "first_pressure",
-    "invite_5_friends",
-  ]).notNull(),
-  unlockedAt: timestamp("unlockedAt").defaultNow().notNull(),
+// â”€â”€â”€ User Achievements (Gamification) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const userAchievements = pgTable("user_achievements", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
+  achievementKey: varchar("achievementKey", { length: 20 }).notNull(),
+  unlockedAt: timestamp("unlockedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type UserPoint = typeof userPoints.$inferSelect;
@@ -456,67 +423,60 @@ export type InsertUserPoint = typeof userPoints.$inferInsert;
 export type UserAchievement = typeof userAchievements.$inferSelect;
 export type InsertUserAchievement = typeof userAchievements.$inferInsert;
 
-// ─── Moderation Queue ─────────────────────────────────────────────────────────
-export const moderationQueue = mysqlTable("moderation_queue", {
-  id: int("id").autoincrement().primaryKey(),
-  contentType: mysqlEnum("contentType", ["lobby", "post", "comment"]).notNull(),
-  contentId: int("contentId").notNull(),
+// â”€â”€â”€ Moderation Queue â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const moderationQueue = pgTable("moderation_queue", {
+  id: serial("id").primaryKey(),
+  contentType: varchar("contentType", { length: 20 }).notNull(),
+  contentId: integer("contentId").notNull(),
   contentTitle: varchar("contentTitle", { length: 255 }),
   contentText: text("contentText"),
-  userId: int("userId").notNull(),
-  status: mysqlEnum("status", ["pending", "approved", "rejected", "escalated"]).default("pending").notNull(),
+  userId: integer("userId").notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
   // IA analysis
   aiScore: decimal("aiScore", { precision: 5, scale: 2 }),  // 0-100 risk score
   aiFlags: text("aiFlags"),  // JSON array of flags: ["hate_speech", "criminal", "fake_news", "no_legal_basis"]
   aiReason: text("aiReason"),
   // Human review
-  reviewedBy: int("reviewedBy"),
-  reviewedAt: timestamp("reviewedAt"),
+  reviewedBy: integer("reviewedBy"),
+  reviewedAt: timestamp("reviewedAt", { withTimezone: true }),
   reviewNote: text("reviewNote"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Moderation Logs ──────────────────────────────────────────────────────────
-export const moderationLogs = mysqlTable("moderation_logs", {
-  id: int("id").autoincrement().primaryKey(),
-  queueId: int("queueId").notNull(),
-  moderatorId: int("moderatorId").notNull(),
-  action: mysqlEnum("action", ["approve", "reject", "escalate", "request_edit"]).notNull(),
+// â”€â”€â”€ Moderation Logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const moderationLogs = pgTable("moderation_logs", {
+  id: serial("id").primaryKey(),
+  queueId: integer("queueId").notNull(),
+  moderatorId: integer("moderatorId").notNull(),
+  action: varchar("action", { length: 20 }).notNull(),
   note: text("note"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Privacy Settings (LGPD) ──────────────────────────────────────────────────
-export const privacySettings = mysqlTable("privacy_settings", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().unique(),
-  profileVisibility: mysqlEnum("profileVisibility", ["public", "followers", "private"]).default("public").notNull(),
+// â”€â”€â”€ Privacy Settings (LGPD) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const privacySettings = pgTable("privacy_settings", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull().unique(),
+  profileVisibility: varchar("profileVisibility", { length: 20 }).default("public").notNull(),
   showLocation: boolean("showLocation").default(true).notNull(),
   showActivity: boolean("showActivity").default(true).notNull(),
   showPoints: boolean("showPoints").default(true).notNull(),
   allowAnonymous: boolean("allowAnonymous").default(false).notNull(),
   anonymousAlias: varchar("anonymousAlias", { length: 50 }),
-  dataConsentAt: timestamp("dataConsentAt"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  dataConsentAt: timestamp("dataConsentAt", { withTimezone: true }),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-// ─── Content Reports ──────────────────────────────────────────────────────────
-export const contentReports = mysqlTable("content_reports", {
-  id: int("id").autoincrement().primaryKey(),
-  reporterId: int("reporterId").notNull(),
-  contentType: mysqlEnum("contentType", ["lobby", "post", "comment", "user"]).notNull(),
-  contentId: int("contentId").notNull(),
-  reason: mysqlEnum("reason", [
-    "hate_speech",
-    "criminal_content",
-    "fake_news",
-    "spam",
-    "harassment",
-    "other",
-  ]).notNull(),
+// â”€â”€â”€ Content Reports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const contentReports = pgTable("content_reports", {
+  id: serial("id").primaryKey(),
+  reporterId: integer("reporterId").notNull(),
+  contentType: varchar("contentType", { length: 20 }).notNull(),
+  contentId: integer("contentId").notNull(),
+  reason: varchar("reason", { length: 20 }).notNull(),
   description: text("description"),
-  status: mysqlEnum("status", ["pending", "reviewed", "dismissed"]).default("pending").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  status: varchar("status", { length: 20 }).default("pending").notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type ModerationQueueItem = typeof moderationQueue.$inferSelect;
@@ -528,9 +488,9 @@ export type InsertPrivacySetting = typeof privacySettings.$inferInsert;
 export type ContentReport = typeof contentReports.$inferSelect;
 export type InsertContentReport = typeof contentReports.$inferInsert;
 
-// ─── Press / Journalists ─────────────────────────────────────────────────────
-export const pressJournalists = mysqlTable("press_journalists", {
-  id: int("id").autoincrement().primaryKey(),
+// â”€â”€â”€ Press / Journalists â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const pressJournalists = pgTable("press_journalists", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 200 }).notNull(),
   email: varchar("email", { length: 200 }).notNull().unique(),
   outlet: varchar("outlet", { length: 200 }).notNull(),
@@ -540,22 +500,17 @@ export const pressJournalists = mysqlTable("press_journalists", {
   regions: text("regions"),       // JSON array of states/regions
   verified: boolean("verified").default(false).notNull(),
   alertsEnabled: boolean("alertsEnabled").default(true).notNull(),
-  minSupportThreshold: int("minSupportThreshold").default(1000).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  minSupportThreshold: integer("minSupportThreshold").default(1000).notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const pressAlerts = mysqlTable("press_alerts", {
-  id: int("id").autoincrement().primaryKey(),
-  lobbyId: int("lobbyId").notNull(),
-  journalistId: int("journalistId").notNull(),
-  alertType: mysqlEnum("alertType", [
-    "new_lobby",
-    "milestone_reached",
-    "priority_agenda",
-    "bill_submitted",
-  ]).notNull(),
-  sentAt: timestamp("sentAt").defaultNow().notNull(),
+export const pressAlerts = pgTable("press_alerts", {
+  id: serial("id").primaryKey(),
+  lobbyId: integer("lobbyId").notNull(),
+  journalistId: integer("journalistId").notNull(),
+  alertType: varchar("alertType", { length: 20 }).notNull(),
+  sentAt: timestamp("sentAt", { withTimezone: true }).defaultNow().notNull(),
   opened: boolean("opened").default(false).notNull(),
 });
 
@@ -564,52 +519,41 @@ export type InsertPressJournalist = typeof pressJournalists.$inferInsert;
 export type PressAlert = typeof pressAlerts.$inferSelect;
 export type InsertPressAlert = typeof pressAlerts.$inferInsert;
 
-// ─── Citizen Feed (Feed Social de Denúncias Cidadãs) ─────────────────────────
-export const citizenPosts = mysqlTable("citizen_posts", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+// â”€â”€â”€ Citizen Feed (Feed Social de DenÃºncias CidadÃ£s) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const citizenPosts = pgTable("citizen_posts", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   content: text("content").notNull(),
   mediaUrls: text("mediaUrls"),       // JSON array of S3 URLs (photos/videos)
   mediaTypes: text("mediaTypes"),     // JSON array: "image" | "video"
-  category: mysqlEnum("category", [
-    "infrastructure",
-    "education",
-    "health",
-    "security",
-    "environment",
-    "human_rights",
-    "economy",
-    "transparency",
-    "culture",
-    "other",
-  ]).default("other").notNull(),
+  category: varchar("category", { length: 20 }).default("other").notNull(),
   locationAddress: text("locationAddress"),
   locationCity: varchar("locationCity", { length: 100 }),
   locationState: varchar("locationState", { length: 2 }),
   latitude: decimal("latitude", { precision: 10, scale: 7 }),
   longitude: decimal("longitude", { precision: 10, scale: 7 }),
-  likesCount: int("likesCount").default(0).notNull(),
-  commentsCount: int("commentsCount").default(0).notNull(),
-  sharesCount: int("sharesCount").default(0).notNull(),
-  status: mysqlEnum("status", ["active", "hidden", "removed"]).default("active").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  likesCount: integer("likesCount").default(0).notNull(),
+  commentsCount: integer("commentsCount").default(0).notNull(),
+  sharesCount: integer("sharesCount").default(0).notNull(),
+  status: varchar("status", { length: 20 }).default("active").notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const citizenPostLikes = mysqlTable("citizen_post_likes", {
-  id: int("id").autoincrement().primaryKey(),
-  postId: int("postId").notNull(),
-  userId: int("userId").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+export const citizenPostLikes = pgTable("citizen_post_likes", {
+  id: serial("id").primaryKey(),
+  postId: integer("postId").notNull(),
+  userId: integer("userId").notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const citizenPostComments = mysqlTable("citizen_post_comments", {
-  id: int("id").autoincrement().primaryKey(),
-  postId: int("postId").notNull(),
-  userId: int("userId").notNull(),
+export const citizenPostComments = pgTable("citizen_post_comments", {
+  id: serial("id").primaryKey(),
+  postId: integer("postId").notNull(),
+  userId: integer("userId").notNull(),
   content: text("content").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type CitizenPost = typeof citizenPosts.$inferSelect;
@@ -617,38 +561,39 @@ export type InsertCitizenPost = typeof citizenPosts.$inferInsert;
 export type CitizenPostLike = typeof citizenPostLikes.$inferSelect;
 export type CitizenPostComment = typeof citizenPostComments.$inferSelect;
 
-// ─── Invite Codes (Beta Fechado) ──────────────────────────────────────────────
-export const inviteCodes = mysqlTable("invite_codes", {
-  id: int("id").autoincrement().primaryKey(),
+// â”€â”€â”€ Invite Codes (Beta Fechado) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const inviteCodes = pgTable("invite_codes", {
+  id: serial("id").primaryKey(),
   code: varchar("code", { length: 32 }).notNull().unique(),
-  createdBy: int("createdBy"),
-  usedBy: int("usedBy"),
-  usedAt: timestamp("usedAt"),
-  maxUses: int("maxUses").default(1).notNull(),
-  useCount: int("useCount").default(0).notNull(),
-  expiresAt: timestamp("expiresAt"),
+  createdBy: integer("createdBy"),
+  usedBy: integer("usedBy"),
+  usedAt: timestamp("usedAt", { withTimezone: true }),
+  maxUses: integer("maxUses").default(1).notNull(),
+  useCount: integer("useCount").default(0).notNull(),
+  expiresAt: timestamp("expiresAt", { withTimezone: true }),
   isActive: boolean("isActive").default(true).notNull(),
   description: varchar("description", { length: 200 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
 });
 export type InviteCode = typeof inviteCodes.$inferSelect;
 export type InsertInviteCode = typeof inviteCodes.$inferInsert;
 
-// ─── Push Notification Tokens ─────────────────────────────────────────────────
-export const pushTokens = mysqlTable("push_tokens", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+// â”€â”€â”€ Push Notification Tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const pushTokens = pgTable("push_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("userId").notNull(),
   token: varchar("token", { length: 512 }).notNull(),
   platform: varchar("platform", { length: 10 }).notNull().default("expo"), // "expo" | "apns" | "fcm"
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { withTimezone: true }).defaultNow().notNull(),
 });
 export type PushToken = typeof pushTokens.$inferSelect;
 export type InsertPushToken = typeof pushTokens.$inferInsert;
 
-// ─── Contact / Interest Submissions ───────────────────────────────────────────
-export const contactSubmissions = mysqlTable("contact_submissions", {
-  id: int("id").autoincrement().primaryKey(),
+// â”€â”€â”€ Contact / Interest Submissions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€â”€ Contact / Interest Submissions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+export const contactSubmissions = pgTable("contact_submissions", {
+  id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
   email: varchar("email", { length: 320 }).notNull(),
   phone: varchar("phone", { length: 20 }),
@@ -656,9 +601,21 @@ export const contactSubmissions = mysqlTable("contact_submissions", {
   city: varchar("city", { length: 100 }),
   interests: text("interests"),          // JSON array of categories
   message: text("message"),
-  type: mysqlEnum("type", ["tester", "partner", "press", "other"]).default("tester").notNull(),
-  userId: int("userId"),                 // nullable — linked if user is logged in
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  type: varchar("type", { length: 20 }).default("tester").notNull(), // PostgreSQL nÃ£o tem mysqlEnum
+  userId: integer("user_id"),            // nullable â€” linked if user is logged in
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;
 export type InsertContactSubmission = typeof contactSubmissions.$inferInsert;
+// Tabela para tokens de redefiniÃ§Ã£o de senha
+// Tabela para tokens de redefiniÃ§Ã£o de senha (esqueci minha senha)
+export const passwordResets = pgTable("password_resets", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+export type PasswordReset = typeof passwordResets.$inferSelect;
+export type InsertPasswordReset = typeof passwordResets.$inferInsert;
+
