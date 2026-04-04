@@ -1,0 +1,111 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1763372440610,
+      "tag": "0000_elite_eternals",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1772118607378,
+      "tag": "0001_tranquil_william_stryker",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1772125825896,
+      "tag": "0002_ordinary_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1772155607941,
+      "tag": "0003_green_tinkerer",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1772156912939,
+      "tag": "0004_flippant_multiple_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1772158018385,
+      "tag": "0005_loving_tarantula",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1772160742792,
+      "tag": "0006_puzzling_sunfire",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1772161247832,
+      "tag": "0007_early_shadowcat",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1772188313243,
+      "tag": "0008_grey_toxin",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1772189422903,
+      "tag": "0009_mute_rawhide_kid",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1772192120644,
+      "tag": "0010_tranquil_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1774005128603,
+      "tag": "0011_steady_taskmaster",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1774619380121,
+      "tag": "0012_furry_saracen",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1774980734300,
+      "tag": "0013_overrated_serpent_society",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1775228738032,
+      "tag": "0014_bumpy_rage",
+      "breakpoints": true
+    }
+  ]
+}
