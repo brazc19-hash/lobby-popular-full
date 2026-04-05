@@ -654,6 +654,19 @@ requiresReview = true se score >= 40 ou houver qualquer flag.`;
           response_format: { type: "json_object" },
         });
         return JSON.parse(response.choices[0].message.content as string);
+ chat: publicProcedure
+      .input(z.object({
+        messages: z.array(z.object({
+          role: z.enum(["user", "assistant"]),
+          content: z.string(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const response = await invokeLLM({
+          messages: input.messages,
+        });
+        return { content: response.choices[0].message.content, role: "assistant" as const };
       }),
   }),
 
