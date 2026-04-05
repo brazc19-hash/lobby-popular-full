@@ -642,19 +642,20 @@ requiresReview = true se score >= 40 ou houver qualquer flag.`;
       .mutation(({ input }) => db.checkAndAchieveSmartMilestones(input.lobbyId, input.currentCount)),
   }),
 
-  populus: router({
+    populus: router({
     legalAnalysis: publicProcedure
       .input(z.object({ title: z.string(), description: z.string(), category: z.string().optional() }))
       .mutation(async ({ input }) => {
         const response = await invokeLLM({
           messages: [
-            { role: "system", content: "Você é o Assistente Populus, especialista em direito constitucional e lobby cidadão brasileiro. Sempre responda em português do Brasil com JSON válido." },
-            { role: "user", content: `Analise juridicamente esta demanda cidadã:\n\nTítulo: ${input.title}\nDescrição: ${input.description}\nCategoria: ${input.category || "Geral"}\n\nForneça JSON com: constitutionalArticles (array de {article, description, relevance}), federalLaws (array de {law, description}), legalArguments (array de strings), jurisprudence (array de {case, outcome}), successProbability (0-100), summary (string).` },
+            { role: "system", content: "Você é o Assistente Populus, especialista em direito constitucional." },
+            { role: "user", content: `Analise juridicamente: ${input.title}. Descrição: ${input.description}` },
           ],
-          response_format: { type: "json_object" },
         });
         return JSON.parse(response.choices[0].message.content as string);
- chat: publicProcedure
+      }),
+
+    chat: publicProcedure
       .input(z.object({
         messages: z.array(z.object({
           role: z.enum(["user", "assistant"]),
