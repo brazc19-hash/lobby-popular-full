@@ -183,7 +183,7 @@ function EmailPanel({ onSuccess }: { onSuccess: () => void }) {
         </>
       )}
 
-      <TouchableOpacity
+           <TouchableOpacity
         style={[styles.primaryBtn, { backgroundColor: colors.primary, opacity: isPending ? 0.7 : 1 }]}
         onPress={handleSubmit}
         disabled={isPending}
@@ -200,6 +200,12 @@ function EmailPanel({ onSuccess }: { onSuccess: () => void }) {
           ? "Não tem conta? Toque em \"Criar conta\" acima."
           : "Já tem conta? Toque em \"Entrar\" acima."}
       </Text>
+
+      <TouchableOpacity onPress={() => router.push("/forgot-password")} style={{ marginTop: 12 }}>
+        <Text style={{ color: colors.primary, textAlign: "center" }}>
+          Esqueci minha senha
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
